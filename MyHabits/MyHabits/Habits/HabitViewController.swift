@@ -7,28 +7,27 @@
 
 import UIKit
 
-enum ShowVC {
-    case createHabit
-    case editHabit
-}
-
 class HabitViewController: UIViewController {
     
-    public var currentLastVC = ShowVC.createHabit
+    weak var reloadingDataDelegate: ReloadingCollectionDataDelegate?
+    weak var reloadingTitleDelegate: ReloadingTitleDelegate?
     
-    lazy var newHabit = Habit(name: "Выпить стакан воды перед завтраком",
-                                 date: Date(),
-                                 color: .systemRed)
-    
+    var isOnEditMode: Bool = false
+    var editingHabit: Habit?
     
     override func viewDidLoad() {
         super.viewDidLoad()
 
         self.view.backgroundColor = .white
-        self.title = "Создать"
+        
+        let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(tapColorPicker))
+        colorPickerButton.isUserInteractionEnabled = true
+        colorPickerButton.addGestureRecognizer(tapGestureRecognizer)
         
         setupView()
+        dateChanged()
     }
+    
     
     lazy var nameHabitLabel: UILabel = {
         let label = UILabel()
@@ -44,7 +43,6 @@ class HabitViewController: UIViewController {
         textField.translatesAutoresizingMaskIntoConstraints = false
         textField.placeholder = "Бегать по утрам, спать 8 часов и т.п."
         textField.font = .FootNote
-        
         return textField
     }()
 
@@ -56,14 +54,13 @@ class HabitViewController: UIViewController {
         return label
     }()
     
-    lazy var colorPickerButton: UIButton = {
-        let button = UIButton()
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.roundCornerWithRadius(15, top: true, bottom: true, shadowEnabled: false)
-        button.addTarget(self, action: #selector(tapColorPicker), for: .touchUpInside)
-        button.backgroundColor = .yellow
+    lazy var colorPickerButton: UIImageView = {
+        let imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.roundCornerWithRadius(15, top: true, bottom: true, shadowEnabled: false)
+        imageView.backgroundColor = .yellow
         
-        return button
+        return imageView
     }()
     
     @objc func tapColorPicker() {
@@ -89,8 +86,16 @@ class HabitViewController: UIViewController {
     lazy var habitTimeTextLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = newHabit.dateString
+        label.textColor = .black
+        label.text = "Каждый день в "
+        return label
+    }()
+    
+    lazy var datepickerLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
         label.textColor = .CustomPurple
+
         return label
     }()
     
@@ -104,9 +109,9 @@ class HabitViewController: UIViewController {
     }()
     
     @objc func dateChanged() {
-        print("меняем время")
-        newHabit.date = datepicker.date
-        habitTimeTextLabel.text = newHabit.dateString
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        datepickerLabel.text = formatter.string(from: datepicker.date)
     }
     
     @objc func actionCancelButton(_ sender: Any) {
@@ -114,23 +119,45 @@ class HabitViewController: UIViewController {
     }
     
     @objc func actionSaveButton(_ sender: Any) {
-        print("tap Save")
         
-        guard let text = nameHabitTextField.text, !text.isEmpty else {
-            let alertController = UIAlertController(title: "Внимание", message: "Вы не ввели привычку!", preferredStyle: .alert)
+        if isOnEditMode {
+            if let habit = editingHabit, let index = HabitsStore.shared.habits.firstIndex(of: habit) {
+                HabitsStore.shared.habits[index].name = nameHabitTextField.text ?? ""
+                HabitsStore.shared.habits[index].date = datepicker.date
+                HabitsStore.shared.habits[index].color = colorPickerButton.backgroundColor ?? .CustomPurple
+                HabitsStore.shared.save()
+                reloadingDataDelegate?.updCollection()
+                reloadingTitleDelegate?.reloadTitle()
+                self.dismiss(animated: true, completion: nil)
+            }
+        } else {
+            guard let text = nameHabitTextField.text, !text.isEmpty else {
+                let alertController = UIAlertController(title: "Внимание", message: "Вы не ввели название привычки!", preferredStyle: .alert)
+                
+                let actionOk = UIAlertAction(title: "Ok", style: .default, handler: nil)
+                alertController.addAction(actionOk)
+                self.present(alertController, animated: true, completion: nil)
+                return
+            }
             
-            let actionOk = UIAlertAction(title: "Ok", style: .default, handler: nil)
-            alertController.addAction(actionOk)
-            self.present(alertController, animated: true, completion: nil)
-            return
-        }
-        
-        if let valueName = nameHabitTextField.text {
-            newHabit.name = valueName
+            let newHabit = Habit(name: nameHabitTextField.text ?? "",
+                                 date: datepicker.date,
+                                 color: colorPickerButton.backgroundColor ?? .CustomPurple)
             let store = HabitsStore.shared
             store.habits.append(newHabit)
+            reloadingDataDelegate?.updCollection()
             dismiss(animated: true, completion: nil)
-            print("\(newHabit.name) \(newHabit.date) \(newHabit.color)")
+        }
+    }
+    
+    func setupEditingMode() {
+        if isOnEditMode {
+            if let habit = editingHabit {
+                nameHabitLabel.text = habit.name
+                nameHabitLabel.textColor = habit.color
+                colorPickerButton.backgroundColor = habit.color
+                datepickerLabel.textColor = habit.color
+            }
         }
     }
     
@@ -145,12 +172,16 @@ class HabitViewController: UIViewController {
     
     @objc func deleteButtonPressed() {
         
-        let alertController = UIAlertController(title: "Удалить привычку", message: "Вы хотите удалить привычку \(newHabit.name)", preferredStyle: .alert)
+        let alertController = UIAlertController(title: "Удалить привычку", message: "Вы хотите удалить привычку \(nameHabitLabel.text ?? "")", preferredStyle: .alert)
         
         let cancelAction = UIAlertAction(title: "Отмена", style: .default, handler: nil)
         
         let deleteAction = UIAlertAction(title: "Удалить", style: .destructive) { _ in
-            self.dismiss(animated: true, completion: nil)
+            if let habit = self.editingHabit, let index = HabitsStore.shared.habits.firstIndex(of: habit) {
+                HabitsStore.shared.habits.remove(at: index)
+                self.reloadingDataDelegate?.updCollection()
+                self.dismiss(animated: true, completion: nil)
+            }
         }
         alertController.addAction(cancelAction)
         alertController.addAction(deleteAction)
@@ -182,14 +213,15 @@ extension HabitViewController {
         rightBarButtonItem.tintColor = .CustomPurple
         navigItem.rightBarButtonItem = rightBarButtonItem
         navigItem.leftBarButtonItem = leftBarButtonItem
-        
-        switch currentLastVC {
-            case .createHabit: navigItem.title = "Создать"
-            case .editHabit: navigItem.title = "Править"
-        }
 
         navigBar.setItems([navigItem], animated: true)
         navigBar.backgroundColor = .systemGray
+        
+        if isOnEditMode == false {
+            navigItem.title = "Создать"
+        } else {
+            navigItem.title = "Править"
+        }
         
  
         view.addSubview(nameHabitLabel)
@@ -199,6 +231,8 @@ extension HabitViewController {
         view.addSubview(timeLabel)
         view.addSubview(habitTimeTextLabel)
         view.addSubview(datepicker)
+        view.addSubview(datepickerLabel)
+        
         
         let constraints = [
             nameHabitLabel.topAnchor.constraint(equalTo: navigBar.bottomAnchor, constant: 21),
@@ -223,6 +257,11 @@ extension HabitViewController {
 
             habitTimeTextLabel.topAnchor.constraint(equalTo: timeLabel.bottomAnchor, constant: 7),
             habitTimeTextLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            habitTimeTextLabel.bottomAnchor.constraint(equalTo: datepicker.topAnchor, constant: -16),
+            
+            datepickerLabel.leadingAnchor.constraint(equalTo: habitTimeTextLabel.trailingAnchor, constant: .zero),
+            datepickerLabel.topAnchor.constraint(equalTo: timeLabel.bottomAnchor, constant: 7),
+            datepickerLabel.bottomAnchor.constraint(equalTo: datepicker.topAnchor, constant: -16),
 
             datepicker.topAnchor.constraint(equalTo: habitTimeTextLabel.bottomAnchor, constant: 15),
             datepicker.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
@@ -231,9 +270,8 @@ extension HabitViewController {
         ]
         NSLayoutConstraint.activate(constraints)
         
-        switch currentLastVC {
-        case .createHabit: do { }
-        case .editHabit: do {
+
+        if isOnEditMode {
             view.addSubview(deleteHabitButton)
             
             let constrForButton = [
@@ -243,16 +281,14 @@ extension HabitViewController {
             ]
             NSLayoutConstraint.activate(constrForButton)
             }
-        }
     }
 }
 
 
 extension HabitViewController: UIColorPickerViewControllerDelegate {
     
-    func colorPickerViewControllerDidSelectColor(_ viewController: UIColorPickerViewController) {
-            let color = viewController.selectedColor
-            newHabit.color = color
-            colorPickerButton.backgroundColor = color
-        }
+    func colorPickerViewControllerDidFinish(_ viewController: UIColorPickerViewController) {
+        let selectedColor = viewController.selectedColor
+        colorPickerButton.backgroundColor = selectedColor
+    }
 }

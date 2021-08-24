@@ -7,6 +7,14 @@
 
 import UIKit
 
+protocol ReloadingCollectionDataDelegate: AnyObject {
+    func updCollection()
+}
+
+protocol ReloadingTitleDelegate: AnyObject {
+    func reloadTitle()
+}
+
 class HabitsViewController: UIViewController {
     
     private lazy var store = HabitsStore.shared
@@ -25,50 +33,34 @@ class HabitsViewController: UIViewController {
         collectionView.delegate = self
         return collectionView
     }()
-    
-    
-    lazy var addButton: UIButton = {
-        let button = UIButton()
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.setImage(UIImage(systemName: "plus"), for: .normal)
-        button.imageView?.sizeToFit()
-        button.imageView?.tintColor = .CustomPurple
-        button.addTarget(self, action: #selector(addHabit), for: .touchUpInside)
-        return button
-    } ()
-    
-    lazy var todayLabel: UILabel = {
-        let label = UILabel()
-        label.text = "Сегодня"
-        label.font = UIFont.systemFont(ofSize: 34, weight: .bold)
-        label.textColor = .black
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
         self.view.backgroundColor = .white
         view.addSubview(habitsCollectionView)
-        view.addSubview(todayLabel)
-        view.addSubview(addButton)
         setupView()
         
-        navigationController?.navigationBar.isHidden = true
+        
+        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addHabit))
+        
         habitsCollectionView.reloadData()
     }
-    
     
     override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(true)
-        navigationController?.navigationBar.isHidden = true
+        super.viewWillAppear(animated)
+        
+        navigationController?.navigationBar.prefersLargeTitles = true
+        
         habitsCollectionView.reloadData()
     }
+    
+    
     
     @objc func addHabit(sender: UIButton!) {
        print("Button tapped")
         let addHabitVC = HabitViewController()
+        addHabitVC.reloadingDataDelegate = self
         self.present(addHabitVC, animated: true, completion: nil)
     }
 }
@@ -81,16 +73,7 @@ extension HabitsViewController {
         habitsCollectionView.backgroundColor = .AlmostWhite
         
         let constraints = [
-            
-            addButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -5),
-            addButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            addButton.bottomAnchor.constraint(equalTo: todayLabel.topAnchor, constant: -4),
-            addButton.widthAnchor.constraint(equalToConstant: 44),
-            addButton.heightAnchor.constraint(equalToConstant: 44),
-            
-            todayLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 14),
-            todayLabel.bottomAnchor.constraint(equalTo: habitsCollectionView.topAnchor, constant: -8),
-            
+            habitsCollectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             habitsCollectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
             habitsCollectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
             habitsCollectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
@@ -103,10 +86,10 @@ extension HabitsViewController: UICollectionViewDelegateFlowLayout {
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
         if section == 0 {
-            return UIEdgeInsets(top: 22, left: 16, bottom: 18, right: 16)
+            return UIEdgeInsets(top: 16, left: 16, bottom: 18, right: 16)
         }
         else {
-            return UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+            return UIEdgeInsets(top: 22, left: 16, bottom: 18, right: 16)
         }
     }
 
@@ -148,24 +131,15 @@ extension HabitsViewController: UICollectionViewDataSource {
         if store.habits.count != 0 {
             if indexPath.section == 0{
                 let cellProgress = habitsCollectionView.dequeueReusableCell(withReuseIdentifier: String(describing: ProgressCollectionViewCell.self), for: indexPath) as! ProgressCollectionViewCell
-
+                
+                cellProgress.progressLine.setProgress(HabitsStore.shared.todayProgress, animated: true)
+                cellProgress.statusLabel.text = "\(Int(HabitsStore.shared.todayProgress * 100))%"
+                
                  return cellProgress
             } else {
                 let cellHabit = habitsCollectionView.dequeueReusableCell(withReuseIdentifier: String(describing: HabbitCollectionViewCell.self), for: indexPath) as! HabbitCollectionViewCell
 
-                let habit = store.habits[indexPath.item]
-
-                if habit.isAlreadyTakenToday {
-                    cellHabit.changeButton.backgroundColor = habit.color
-                    print(habit.color)
-                } else {
-                    cellHabit.changeButton.backgroundColor = .white
-                }
-                 
-                 cellHabit.nameHabitLabel.text = habit.name
-                 cellHabit.nameHabitLabel.textColor = habit.color
-                 cellHabit.dateLabel.text = habit.dateString
-                 cellHabit.counterLabel.text = "Подряд: \(habit.trackDates.count)"
+                cellHabit.habit = store.habits[indexPath.item]
 
                  return cellHabit
             }
@@ -181,10 +155,21 @@ extension HabitsViewController: UICollectionViewDataSource {
         habitsCollectionView.deselectItem(at: indexPath, animated: true)
         
         if indexPath.section == 1 {
-            let habit = store.habits[indexPath.item]
             let habitDetailVC = HabitDetailsViewController()
-            habitDetailVC.title = habit.name
+            habitDetailVC.detailsHabit = store.habits[indexPath.item]
+            
             navigationController?.pushViewController(habitDetailVC, animated: true)
         }
+    }
+}
+extension HabitsViewController: ReloadingCollectionDataDelegate {
+    func updCollection() {
+        habitsCollectionView.reloadData()
+    }
+}
+
+extension HabitsViewController: ReloadingProgressBarDelegate {
+    func reloadProgressBar() {
+        habitsCollectionView.reloadData()
     }
 }

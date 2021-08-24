@@ -17,7 +17,6 @@
 		9F696F0626C3CA570016B0DD /* InfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F696F0526C3CA570016B0DD /* InfoViewController.swift */; };
 		9F696F0F26C3F1020016B0DD /* HabitsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F696F0E26C3F1020016B0DD /* HabitsViewController.swift */; };
 		9F696F1426C3F3FB0016B0DD /* HabitsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F696F1326C3F3FB0016B0DD /* HabitsStore.swift */; };
-		9F696F1726C3F7060016B0DD /* MyCustomHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F696F1626C3F7060016B0DD /* MyCustomHeader.swift */; };
 		9F696F1A26C3FFCC0016B0DD /* HabitViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F696F1926C3FFCC0016B0DD /* HabitViewController.swift */; };
 		9F696F1E26C409EF0016B0DD /* HabbitCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F696F1D26C409EF0016B0DD /* HabbitCollectionViewCell.swift */; };
 		9F696F2226C40B2A0016B0DD /* ExtensionDisign.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F696F2126C40B2A0016B0DD /* ExtensionDisign.swift */; };
@@ -38,7 +37,6 @@
 		9F696F0526C3CA570016B0DD /* InfoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoViewController.swift; sourceTree = "<group>"; };
 		9F696F0E26C3F1020016B0DD /* HabitsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitsViewController.swift; sourceTree = "<group>"; };
 		9F696F1326C3F3FB0016B0DD /* HabitsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitsStore.swift; sourceTree = "<group>"; };
-		9F696F1626C3F7060016B0DD /* MyCustomHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyCustomHeader.swift; sourceTree = "<group>"; };
 		9F696F1926C3FFCC0016B0DD /* HabitViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitViewController.swift; sourceTree = "<group>"; };
 		9F696F1D26C409EF0016B0DD /* HabbitCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabbitCollectionViewCell.swift; sourceTree = "<group>"; };
 		9F696F2126C40B2A0016B0DD /* ExtensionDisign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionDisign.swift; sourceTree = "<group>"; };
@@ -101,7 +99,6 @@
 			isa = PBXGroup;
 			children = (
 				9F696F0E26C3F1020016B0DD /* HabitsViewController.swift */,
-				9F696F1626C3F7060016B0DD /* MyCustomHeader.swift */,
 				9F696F1926C3FFCC0016B0DD /* HabitViewController.swift */,
 				9F696F1D26C409EF0016B0DD /* HabbitCollectionViewCell.swift */,
 				9F40E15626C5025C00B0ABDD /* EmptyCollectionViewCell.swift */,
@@ -203,7 +200,6 @@
 				9F696F2626C40EE90016B0DD /* RoundedandShadow.swift in Sources */,
 				9F7824A926C65EA800628B4F /* HabitDetailsViewController.swift in Sources */,
 				9F696F2226C40B2A0016B0DD /* ExtensionDisign.swift in Sources */,
-				9F696F1726C3F7060016B0DD /* MyCustomHeader.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
